@@ -14,6 +14,8 @@ struct EditWidgetSetView: View {
     @State var currentWidgetSet: WidgetSetStruct? = nil
     
     @State var showingAddView: Bool = false
+    @State private var pendingDeleteWidgetIDs: Set<UUID> = []
+    @State private var showingDeleteWidgetConfirmation = false
 
     @State var isEnabled: Bool = true
     @State var orientationMode: Int = 0
@@ -457,13 +459,10 @@ struct EditWidgetSetView: View {
                         }
                     }
                     .onDelete { indexSet in
-                        indexSet.forEach { i in
-                            UIApplication.shared.confirmAlert(title: NSLocalizedString("Delete Widget", comment: ""), body: NSLocalizedString("Are you sure you want to delete this widget?", comment: ""), onOK: {
-                                widgetManager.removeWidget(widgetSet: widgetSet, id: widgetIDs[i], save: false)
-                                saveSet()
-                                widgetIDs.remove(at: i)
-                            }, noCancel: false)
-                        }
+                        pendingDeleteWidgetIDs = Set(indexSet.compactMap { index in
+                            widgetIDs.indices.contains(index) ? widgetIDs[index].id : nil
+                        })
+                        showingDeleteWidgetConfirmation = !pendingDeleteWidgetIDs.isEmpty
                     }
                     .onMove(perform: moveItem)
                 } header: {
@@ -484,6 +483,21 @@ struct EditWidgetSetView: View {
                 }
             }
             .navigationTitle(NSLocalizedString("Edit Widget", comment: ""))
+            .alert(isPresented: $showingDeleteWidgetConfirmation) {
+                Alert(
+                    title: Text(NSLocalizedString("Delete Widget", comment: "")),
+                    message: Text(NSLocalizedString("Are you sure you want to delete the selected widget(s)?", comment: "")),
+                    primaryButton: .destructive(Text(NSLocalizedString("Delete", comment: ""))) {
+                        widgetManager.removeWidgets(widgetSet: widgetSet, ids: pendingDeleteWidgetIDs, save: false)
+                        widgetIDs.removeAll { pendingDeleteWidgetIDs.contains($0.id) }
+                        pendingDeleteWidgetIDs.removeAll()
+                        saveSet()
+                    },
+                    secondaryButton: .cancel {
+                        pendingDeleteWidgetIDs.removeAll()
+                    }
+                )
+            }
             .onAppear {
                 if currentWidgetSet == widgetSet {
                     return

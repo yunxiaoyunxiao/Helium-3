@@ -29,7 +29,7 @@ struct WidgetPreviewsView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(
                             LinearGradient(
-                                colors: [Color(uiColor: .secondarySystemBackground), Color(uiColor: .tertiarySystemBackground)],
+                                colors: [Color.gray.opacity(0.12), Color.gray.opacity(0.24)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )

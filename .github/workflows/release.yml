@@ -85,6 +85,33 @@ jobs:
           cd $GITHUB_WORKSPACE/Helium
           bash ./ipabuild.sh
 
+      - name: Extract App Intents metadata
+        run: |
+          cd "$GITHUB_WORKSPACE/Helium"
+          APP="$RUNNER_TEMP/Helium.app"
+          mkdir -p "$APP"
+          unzip -q build/Helium.tipa "Payload/Helium.app/*" -d "$RUNNER_TEMP/helium-unpacked"
+          APP="$RUNNER_TEMP/helium-unpacked/Payload/Helium.app"
+          TOOLCHAIN="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain"
+          SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          PROCESSOR="$TOOLCHAIN/usr/bin/appintentsmetadataprocessor"
+          if [ ! -x "$PROCESSOR" ]; then
+            echo "App Intents metadata processor not found: $PROCESSOR"
+            exit 1
+          fi
+          "$PROCESSOR" \
+            --toolchain-dir "$TOOLCHAIN" \
+            --sdk-root "$SDK" \
+            --deployment-target 14.0 \
+            --target-triple arm64-apple-ios14.0 \
+            --module-name Helium \
+            --output "$APP" \
+            --binary-file "$APP/Helium" \
+            --source-files "$GITHUB_WORKSPACE/Helium/src/controllers/HeliumShortcuts.swift"
+          test -s "$APP/Metadata.appintents/extract.actionsdata"
+          cd "$RUNNER_TEMP/helium-unpacked"
+          zip -qr "$GITHUB_WORKSPACE/Helium/build/Helium.tipa" Payload
+
       - name: Collect symbols
         run: |
           cd $GITHUB_WORKSPACE/Helium

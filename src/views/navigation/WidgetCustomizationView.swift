@@ -11,6 +11,8 @@ import SwiftUI
 // MARK: Widget Customization View
 struct WidgetCustomizationView: View {
     @StateObject var widgetManager: WidgetManager = .init()
+    @State private var pendingDeleteIDs: Set<UUID> = []
+    @State private var showingDeleteConfirmation = false
     
     var body: some View {
         NavigationView {
@@ -23,11 +25,10 @@ struct WidgetCustomizationView: View {
                         }
                     }
                     .onDelete { indexSet in
-                        indexSet.forEach { i in
-                            UIApplication.shared.confirmAlert(title: NSLocalizedString("Delete ", comment:"")+"\(widgetManager.widgetSets[i].title)", body: NSLocalizedString("Are you sure you want to delete the widget set ", comment:"") + "\"\(widgetManager.widgetSets[i].title)\"?", onOK: {
-                                widgetManager.removeWidgetSet(widgetSet: widgetManager.widgetSets[i])
-                            }, noCancel: false)
-                        }
+                        pendingDeleteIDs = Set(indexSet.compactMap { index in
+                            widgetManager.widgetSets.indices.contains(index) ? widgetManager.widgetSets[index].id : nil
+                        })
+                        showingDeleteConfirmation = !pendingDeleteIDs.isEmpty
                     }
                 }
                 .toolbar {
@@ -64,6 +65,20 @@ struct WidgetCustomizationView: View {
             .navigationTitle(Text(NSLocalizedString("Customize", comment:"")))
         }
         .navigationViewStyle(StackNavigationViewStyle())
+        .alert(isPresented: $showingDeleteConfirmation) {
+            Alert(
+                title: Text(NSLocalizedString("Delete Widget Set", comment: "")),
+                message: Text(NSLocalizedString("Are you sure you want to delete the selected widget set(s)?", comment: "")),
+                primaryButton: .destructive(Text(NSLocalizedString("Delete", comment: ""))) {
+                    widgetManager.widgetSets.removeAll { pendingDeleteIDs.contains($0.id) }
+                    widgetManager.saveWidgetSets()
+                    pendingDeleteIDs.removeAll()
+                },
+                secondaryButton: .cancel {
+                    pendingDeleteIDs.removeAll()
+                }
+            )
+        }
     }
 }
 
@@ -145,7 +160,7 @@ struct WidgetChoiceView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(
                             LinearGradient(
-                                colors: [Color(uiColor: .secondarySystemBackground), Color(uiColor: .tertiarySystemBackground)],
+                                colors: [Color.gray.opacity(0.12), Color.gray.opacity(0.24)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )

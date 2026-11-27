@@ -291,6 +291,13 @@ class WidgetManager: ObservableObject {
         if save { saveWidgetSets(); }
     }
 
+    // Remove widgets by stable identity. This remains safe when confirmation is delayed.
+    public func removeWidgets(widgetSet: WidgetSetStruct, ids: Set<UUID>, save: Bool = true) {
+        guard let index = widgetSets.firstIndex(where: { $0.id == widgetSet.id }) else { return }
+        widgetSets[index].widgetIDs.removeAll { ids.contains($0.id) }
+        if save { saveWidgetSets() }
+    }
+
     // move widgets
     // move at index in list
     public func moveWidget(widgetSet: WidgetSetStruct, source: IndexSet, destination: Int) {
