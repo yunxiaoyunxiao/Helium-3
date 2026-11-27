@@ -87,7 +87,7 @@ jobs:
       - name: Make IPA
         run: |
           cd $GITHUB_WORKSPACE/Helium
-          ./ipabuild.sh --debug
+          bash ./ipabuild.sh --debug
 
       - name: Collect symbols
         run: |
