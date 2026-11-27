@@ -133,13 +133,25 @@ struct WidgetChoiceView: View {
     var body: some View {
         HStack {
             ZStack {
-                Image(uiImage: UIImage(named: "wallpaper")!)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .scaleEffect(1.5)
-                    .frame(width: 125, height: 50)
-                    .cornerRadius(12)
-                    .clipped()
+                if let wallpaper = UIImage(named: "wallpaper") {
+                    Image(uiImage: wallpaper)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .scaleEffect(1.5)
+                        .frame(width: 125, height: 50)
+                        .cornerRadius(12)
+                        .clipped()
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(uiColor: .secondarySystemBackground), Color(uiColor: .tertiarySystemBackground)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 125, height: 50)
+                }
                 ZStack {
                     Text(exampleText)
                         .padding(.vertical, 5)
