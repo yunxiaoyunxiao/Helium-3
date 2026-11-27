@@ -1,2 +1,1 @@
-AppIntents.AppIntent
-AppIntents.AppShortcutsProvider
+["AppIntent", "AppShortcutsProvider"]
