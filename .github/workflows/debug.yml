@@ -15,7 +15,7 @@ concurrency:
 
 env:
   THEOS: ''
-  XCODE_VERSION: '15.1'
+  XCODE_VERSION: '16.4'
   logT: ''
 
 jobs:
