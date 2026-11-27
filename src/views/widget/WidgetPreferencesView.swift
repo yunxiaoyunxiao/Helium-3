@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 struct WidgetPreferencesView: View {
-    @StateObject var widgetManager: WidgetManager
+    @ObservedObject var widgetManager: WidgetManager
     @State var widgetSet: WidgetSetStruct
     @Binding var widgetID: WidgetIDStruct
     

@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 struct EditWidgetSetView: View {
-    @StateObject var widgetManager: WidgetManager
+    @ObservedObject var widgetManager: WidgetManager
     @State var widgetSet: WidgetSetStruct
     @State var currentWidgetSet: WidgetSetStruct? = nil
     
@@ -431,10 +431,10 @@ struct EditWidgetSetView: View {
                             .buttonStyle(TintedButton(color: .blue, fullWidth: true))
                     }
                     // MARK: Widget IDs
-                    ForEach($widgetIDs) { widgetID in
-                        NavigationLink(destination: WidgetPreferencesView(widgetManager: widgetManager, widgetSet: widgetSet, widgetID: widgetID)) {
+                    ForEach(widgetIDs) { widgetID in
+                        NavigationLink(destination: WidgetPreferencesView(widgetManager: widgetManager, widgetSet: widgetSet, widgetID: binding(for: widgetID.id))) {
                             HStack {
-                                WidgetPreviewsView(widget: widgetID, previewColor: .white)
+                                WidgetPreviewsView(widget: binding(for: widgetID.id), previewColor: .white)
                                 Spacer()
                                 // MARK: Configure Widget Button
 //                            Button(action: {
@@ -488,10 +488,10 @@ struct EditWidgetSetView: View {
                     title: Text(NSLocalizedString("Delete Widget", comment: "")),
                     message: Text(NSLocalizedString("Are you sure you want to delete the selected widget(s)?", comment: "")),
                     primaryButton: .destructive(Text(NSLocalizedString("Delete", comment: ""))) {
-                        widgetManager.removeWidgets(widgetSet: widgetSet, ids: pendingDeleteWidgetIDs, save: false)
+                        if changesMade { saveSet() }
+                        widgetManager.removeWidgets(widgetSet: widgetSet, ids: pendingDeleteWidgetIDs, save: true)
                         widgetIDs.removeAll { pendingDeleteWidgetIDs.contains($0.id) }
                         pendingDeleteWidgetIDs.removeAll()
-                        saveSet()
                     },
                     secondaryButton: .cancel {
                         pendingDeleteWidgetIDs.removeAll()
@@ -554,12 +554,20 @@ struct EditWidgetSetView: View {
                 }
             }
             .sheet(isPresented: $showingAddView, content: {
-                WidgetAddView(widgetManager: widgetManager, widgetSet: widgetSet, isOpen: $showingAddView, onChoice: { newWidget in
-                    saveSet()
+                WidgetAddView(isOpen: $showingAddView, onChoice: { module in
+                    let newWidget = widgetManager.addWidget(widgetSet: widgetSet, module: module, save: false)
                     widgetIDs.append(newWidget)
+                    saveSet()
                 })
             })
         }
+    }
+
+    private func binding(for id: UUID) -> Binding<WidgetIDStruct> {
+        guard let index = widgetIDs.firstIndex(where: { $0.id == id }) else {
+            return .constant(widgetIDs.first ?? WidgetIDStruct(module: .textWidget, config: [:]))
+        }
+        return $widgetIDs[index]
     }
 
     func moveItem(from source: IndexSet, to destination: Int) {

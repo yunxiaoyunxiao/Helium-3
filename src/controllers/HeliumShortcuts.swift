@@ -297,3 +297,14 @@ struct HeliumShortcutsProvider: AppShortcutsProvider {
         )
     }
 }
+
+
+// Called by the UIKit application delegate at launch so iOS registers the
+// preconfigured App Shortcuts immediately, including in non-SwiftUI apps.
+@available(iOS 16.0, *)
+@objc(HeliumShortcutsRegistration)
+final class HeliumShortcutsRegistration: NSObject {
+    @objc static func registerAppShortcuts() {
+        HeliumShortcutsProvider.updateAppShortcutParameters()
+    }
+}

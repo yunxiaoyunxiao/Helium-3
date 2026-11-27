@@ -119,19 +119,16 @@ struct WidgetCustomizationView: View {
 
 // MARK: Widget Add View
 struct WidgetAddView: View {
-    @StateObject var widgetManager: WidgetManager
-    @State var widgetSet: WidgetSetStruct
     @Binding var isOpen: Bool
     
-    var onChoice: (WidgetIDStruct) -> ()
+    var onChoice: (WidgetModule) -> ()
     
     var body: some View {
         List {
             ForEach(WidgetModule.allCases, id: \.self) { id in
                 Button(action: {
-                    let newWidget = widgetManager.addWidget(widgetSet: widgetSet, module: id)
                     isOpen = false
-                    onChoice(newWidget)
+                    onChoice(id)
                 }) {
                     WidgetChoiceView(widgetName: WidgetDetails.getWidgetName(id), exampleText: WidgetDetails.getWidgetExample(id))
                 }
