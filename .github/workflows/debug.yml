@@ -3,10 +3,11 @@ name: Build Helium-3 Debug
 on:
   push:
     branches:
-      - "**"
+      - main
     tags:
       - "test"
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: helium-3-${{ github.workflow }}-${{ github.ref }}

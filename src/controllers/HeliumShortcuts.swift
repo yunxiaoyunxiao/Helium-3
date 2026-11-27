@@ -30,9 +30,15 @@ private enum HeliumShortcutStore {
         return values[widgetSetsKey] as? [[String: Any]] ?? []
     }
 
-    static func write(_ values: [String: Any]) throws {
-        let data = try PropertyListSerialization.data(fromPropertyList: values, format: .xml, options: 0)
-        try data.write(to: URL(fileURLWithPath: preferencesPath), options: .atomic)
+    static func setWidgetSets(_ sets: [[String: Any]]) throws {
+        // Reuse the project's existing plist writer so unrelated preference keys
+        // and the original file handling behavior remain unchanged.
+        if sets.isEmpty {
+            UserDefaults.standard.removeObject(forKey: widgetSetsKey, forPath: preferencesPath)
+        } else {
+            UserDefaults.standard.setValue(sets, forKey: widgetSetsKey, forPath: preferencesPath)
+        }
+
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(reloadNotification as CFString),
@@ -40,16 +46,6 @@ private enum HeliumShortcutStore {
             nil,
             true
         )
-    }
-
-    static func setWidgetSets(_ sets: [[String: Any]]) throws {
-        var values = try readPreferences()
-        if sets.isEmpty {
-            values.removeValue(forKey: widgetSetsKey)
-        } else {
-            values[widgetSetsKey] = sets
-        }
-        try write(values)
     }
 
     static func matchingIndex(title: String, in sets: [[String: Any]]) -> Int? {
@@ -158,17 +154,31 @@ struct HeliumSetWidgetSetEnabledIntent: AppIntent {
     @Parameter(title: "小部件集标题")
     var title: String
 
-    @Parameter(title: "启用")
-    var isEnabled: Bool
+    @Parameter(title: "操作（on/off/toggle）", default: "toggle")
+    var action: String
 
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
         var sets = try HeliumShortcutStore.readWidgetSets()
         guard let index = HeliumShortcutStore.matchingIndex(title: title, in: sets) else {
             throw HeliumShortcutStore.ShortcutError.widgetSetNotFound(title)
         }
-        sets[index]["isEnabled"] = isEnabled
+
+        let currentValue = sets[index]["isEnabled"] as? Bool ?? true
+        let newValue: Bool
+        switch action.lowercased() {
+        case "on", "开启":
+            newValue = true
+        case "off", "关闭":
+            newValue = false
+        case "toggle", "切换":
+            newValue = !currentValue
+        default:
+            throw HeliumShortcutStore.ShortcutError.invalidValue("操作")
+        }
+
+        sets[index]["isEnabled"] = newValue
         try HeliumShortcutStore.setWidgetSets(sets)
-        return .result(value: "「\(title)」\(isEnabled ? "已启用" : "已停用")；HUD 总开关未改变。")
+        return .result(value: "「\\(title)」\\(newValue ? "已启用" : "已停用")；HUD 总开关未改变。")
     }
 }
 
@@ -256,31 +266,31 @@ struct HeliumShortcutsProvider: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: HeliumControlHUDIntent(),
-            phrases: ["控制 \\(.applicationName) HUD", "切换 \\(.applicationName) HUD"],
+            phrases: ["控制 \(.applicationName) HUD", "切换 \(.applicationName) HUD"],
             shortTitle: "HUD 开关",
             systemImageName: "switch.2"
         )
         AppShortcut(
             intent: HeliumListWidgetSetsIntent(),
-            phrases: ["列出 \\(.applicationName) 小部件集"],
+            phrases: ["列出 \(.applicationName) 小部件集"],
             shortTitle: "小部件集列表",
             systemImageName: "list.bullet"
         )
         AppShortcut(
             intent: HeliumGetWidgetSetIntent(),
-            phrases: ["读取 \\(.applicationName) 小部件集配置"],
+            phrases: ["读取 \(.applicationName) 小部件集配置"],
             shortTitle: "读取小部件集",
             systemImageName: "doc.text.magnifyingglass"
         )
         AppShortcut(
             intent: HeliumSetWidgetSetEnabledIntent(),
-            phrases: ["启用或停用 \\(.applicationName) 小部件集"],
+            phrases: ["启用或停用 \(.applicationName) 小部件集"],
             shortTitle: "小部件集开关",
             systemImageName: "power"
         )
         AppShortcut(
             intent: HeliumUpdateWidgetSetIntent(),
-            phrases: ["修改 \\(.applicationName) 小部件集配置"],
+            phrases: ["修改 \(.applicationName) 小部件集配置"],
             shortTitle: "修改小部件集",
             systemImageName: "slider.horizontal.3"
         )
