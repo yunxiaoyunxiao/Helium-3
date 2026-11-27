@@ -28,6 +28,16 @@ jobs:
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 
+      - name: Install Swift 5.8.1 toolchain for iOS 16.5 SDK compatibility
+        run: |
+          TOOLCHAIN_PKG="$RUNNER_TEMP/swift-5.8.1-RELEASE-osx.pkg"
+          curl -L --fail --retry 3 "https://download.swift.org/swift-5.8.1-release/xcode/swift-5.8.1-RELEASE/swift-5.8.1-RELEASE-osx.pkg" -o "$TOOLCHAIN_PKG"
+          installer -target CurrentUserHomeDirectory -pkg "$TOOLCHAIN_PKG"
+          TOOLCHAIN_PATH="$HOME/Library/Developer/Toolchains/swift-5.8.1-RELEASE.xctoolchain"
+          TOOLCHAIN_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$TOOLCHAIN_PATH/Info.plist")
+          echo "TOOLCHAINS=$TOOLCHAIN_ID" >> "$GITHUB_ENV"
+          TOOLCHAINS="$TOOLCHAIN_ID" xcrun swiftc --version
+
       - name: Install Homebrew dependencies
         run: |
           HOMEBREW_NO_AUTO_UPDATE=1 brew install dpkg ldid make libplist openssl@3
@@ -74,17 +84,6 @@ jobs:
         with:
           path: Helium
           submodules: recursive
-
-      - name: Add matching Xcode iOS SDK to Theos
-        run: |
-          SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
-          SDK_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :Version' "$SDK_PATH/SDKSettings.plist")"
-          if [ "$SDK_VERSION" != "18.5" ]; then
-            echo "Expected iOS SDK 18.5 from Xcode 16.4, got $SDK_VERSION"
-            exit 1
-          fi
-          ln -sfn "$SDK_PATH" "$THEOS/sdks/iPhoneOS${SDK_VERSION}.sdk"
-          echo "Using matching SDK: $SDK_PATH (iOS $SDK_VERSION)"
 
       - name: Setup build environment
         run: |

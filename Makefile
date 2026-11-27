@@ -1,5 +1,5 @@
 ARCHS := arm64 arm64e
-TARGET := iphone:clang:18.5:14.0
+TARGET := iphone:clang:16.5:14.0
 INSTALL_TARGET_PROCESSES := Helium
 
 TARGET_CC := $(shell xcrun --sdk iphoneos --find clang)
@@ -44,14 +44,9 @@ $(APPLICATION_NAME)_CFLAGS += -fobjc-arc -Iinclude
 $(APPLICATION_NAME)_CFLAGS += -include hud-prefix.pch -Wno-deprecated-declarations
 $(APPLICATION_NAME)_SWIFTFLAGS += -import-objc-header src/bridging/Helium-Bridging-Header.h
 
-$(APPLICATION_NAME)_FRAMEWORKS += CoreGraphics QuartzCore UIKit Foundation SwiftUI
+$(APPLICATION_NAME)_FRAMEWORKS += CoreGraphics QuartzCore UIKit Foundation
 $(APPLICATION_NAME)_WEAK_FRAMEWORKS += AppIntents
 $(APPLICATION_NAME)_PRIVATE_FRAMEWORKS += BackBoardServices GraphicsServices IOKit SpringBoardServices
-# Keep private-framework link stubs from theos' legacy SDK while compiling against Xcode's matching public SDK.
-$(APPLICATION_NAME)_LDFLAGS += -F$(THEOS)/sdks/iPhoneOS16.5.sdk/System/Library/PrivateFrameworks
-# Make the Swift runtime stubs shipped with the selected Xcode toolchain visible to ld.
-SWIFT_RUNTIME_DIR := $(shell xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos
-$(APPLICATION_NAME)_LDFLAGS += -L$(SWIFT_RUNTIME_DIR) -L$(THEOS)/sdks/iPhoneOS18.5.sdk/usr/lib/swift -lswiftUIKit
 
 ifeq ($(TARGET_CODESIGN),ldid)
 $(APPLICATION_NAME)_CODESIGN_FLAGS += -Sent.plist
