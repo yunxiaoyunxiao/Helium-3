@@ -74,7 +74,18 @@ jobs:
         with:
           path: Helium
           submodules: recursive
-  
+
+      - name: Add matching Xcode iOS SDK to Theos
+        run: |
+          SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
+          SDK_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :Version' "$SDK_PATH/SDKSettings.plist")"
+          if [ "$SDK_VERSION" != "18.5" ]; then
+            echo "Expected iOS SDK 18.5 from Xcode 16.4, got $SDK_VERSION"
+            exit 1
+          fi
+          ln -sfn "$SDK_PATH" "$THEOS/sdks/iPhoneOS${SDK_VERSION}.sdk"
+          echo "Using matching SDK: $SDK_PATH (iOS $SDK_VERSION)"
+
       - name: Setup build environment
         run: |
           echo "Available SDKs: $(find $THEOS/sdks -name "*.sdk" -maxdepth 1 -print)"

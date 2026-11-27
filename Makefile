@@ -1,5 +1,5 @@
 ARCHS := arm64 arm64e
-TARGET := iphone:clang:16.5:14.0
+TARGET := iphone:clang:18.5:14.0
 INSTALL_TARGET_PROCESSES := Helium
 
 TARGET_CC := $(shell xcrun --sdk iphoneos --find clang)
@@ -15,22 +15,16 @@ APP_DIR := $(SRC_DIR)/app
 BRIDGING_DIR := $(SRC_DIR)/bridging
 CONTROLLERS_DIR := $(SRC_DIR)/controllers
 EXTENSIONS_DIR := $(SRC_DIR)/extensions
-
-HELPERS_DIR := $(SRC_DIR)/helpers
-PRIV_DIR := $(HELPERS_DIR)/private_headers
-TS_DIR := $(HELPERS_DIR)/ts
-
+PRIV_DIR := $(SRC_DIR)/helpers/private_headers
+TS_DIR := $(SRC_DIR)/helpers/ts
 HUD_DIR := $(SRC_DIR)/hud
-
 VIEWS_DIR := $(SRC_DIR)/views
 NAVVIEWS_DIR := $(VIEWS_DIR)/navigation
 WIDGETVIEWS_DIR := $(VIEWS_DIR)/widget
 WIDGETSETVIEWS_DIR := $(VIEWS_DIR)/widgetset
-
 WIDGETS_DIR := $(SRC_DIR)/widgets
 
 $(APPLICATION_NAME)_USE_MODULES := 0
-# Add Files From Directories
 $(APPLICATION_NAME)_FILES += $(wildcard $(APP_DIR)/*.mm)
 $(APPLICATION_NAME)_FILES += $(wildcard $(BRIDGING_DIR)/*.m)
 $(APPLICATION_NAME)_FILES += $(wildcard $(CONTROLLERS_DIR)/*.swift)
