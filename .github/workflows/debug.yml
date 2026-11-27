@@ -84,6 +84,14 @@ jobs:
           echo $msT
           echo $logT
 
+      - name: Inspect SwiftUI linker support
+        run: |
+          SDK_PATH="$(xcrun --sdk iphoneos --show-sdk-path)"
+          echo "iOS SDK: $SDK_PATH"
+          echo "SwiftUI-related files in iOS SDK:"
+          find "$SDK_PATH" \( -iname '*swiftUIKit*' -o -iname '*SwiftUICore*' \) -print | head -100
+          echo "SwiftUI-related files in Xcode toolchain:"
+          find "$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain" \( -iname '*swiftUIKit*' -o -iname '*SwiftUICore*' \) -print | head -100
       - name: Make IPA
         run: |
           cd $GITHUB_WORKSPACE/Helium
