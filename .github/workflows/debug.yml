@@ -1,4 +1,4 @@
-name: Build Helium Debug
+name: Build Helium-3 Debug
 
 on:
   push:
@@ -7,6 +7,10 @@ on:
     tags:
       - "test"
   pull_request:
+
+concurrency:
+  group: helium-3-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   THEOS: ''
