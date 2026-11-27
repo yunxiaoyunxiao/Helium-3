@@ -49,6 +49,9 @@ $(APPLICATION_NAME)_WEAK_FRAMEWORKS += AppIntents
 $(APPLICATION_NAME)_PRIVATE_FRAMEWORKS += BackBoardServices GraphicsServices IOKit SpringBoardServices
 # Keep private-framework link stubs from theos' legacy SDK while compiling against Xcode's matching public SDK.
 $(APPLICATION_NAME)_LDFLAGS += -F$(THEOS)/sdks/iPhoneOS16.5.sdk/System/Library/PrivateFrameworks
+# Make the Swift runtime stubs shipped with the selected Xcode toolchain visible to ld.
+SWIFT_RUNTIME_DIR := $(shell xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos
+$(APPLICATION_NAME)_LDFLAGS += -L$(SWIFT_RUNTIME_DIR) -L$(THEOS)/sdks/iPhoneOS18.5.sdk/usr/lib/swift
 
 ifeq ($(TARGET_CODESIGN),ldid)
 $(APPLICATION_NAME)_CODESIGN_FLAGS += -Sent.plist
