@@ -1,26 +1,35 @@
-# Helium
-Status Bar Widgets for TrollStore iPhones on iOS 14+. Works on Jailbroken devices as well.
+# Helium-3
 
-More widgets to come in future updates!
+Helium-3 is a continued, modified build of [Helium](https://github.com/AsakuraFuuko/Helium), retaining the original status-bar HUD widgets and adding Apple Shortcuts controls.
 
-**Note:** on iOS 16+, you must enable developer mode for this to work properly.
+## Features
+
+- Original Helium HUD and widget-set functionality.
+- Shortcuts actions for enabling, disabling, toggling, and checking the HUD global switch.
+- List and inspect widget sets.
+- Enable or disable an individual widget set independently of the HUD global switch.
+- Update multiple widget-set layout fields in one action; omitted values remain unchanged.
+
+## Compatibility
+
+- Original project baseline: iOS 14+.
+- Shortcuts/App Intents actions: iOS 16+.
+- On iOS 16+, enable Developer Mode as required by the original project.
 
 ## Building
-[Theos](https://theos.dev) is required to compile the app. The SDK used is iOS 15.0, but you can use any SDK you want.
-To change the SDK, go to the `Makefile` and modify the `TARGET` to your SDK version:
-```
-TARGET := iphone:clang:[SDK Version]:[Minimum Version]
-```
-Run `./ipabuild.sh` to build the ipa. The resulting tipa should be in a folder called 'build'.
 
-## Tested Devices
-- iPhone 13 Pro (iOS 15.3.1, Jailed & Jailbroken)
-- iPhone X (iOS 16.1.1, Jailed & Jailbroken)
-- iPhone X (iOS 16.6.1, Jailed)
-- iPad 7th Generation (iOS 14.8.1, Jailed & Jailbroken)
-- iPad 7th Generation (iOS 16.7.2, Jailbroken)
+Theos and Xcode are required. Run:
 
-## Credits
-- [TrollSpeed](https://github.com/Lessica/TrollSpeed) for the AssistiveTouch logic allowing this to work.
-- [Cowabunga](https://github.com/leminlimez/Cowabunga) for part of the code.
-- [AsakuraFuuko](https://github.com/AsakuraFuuko) for forking and updating.
+```sh
+./ipabuild.sh
+```
+
+The resulting `.tipa` is placed in the `build` directory.
+
+The project includes GitHub Actions workflows to build a debug IPA on pushes and a release IPA on version tags.
+
+## Upstream and licensing
+
+This project is based on [AsakuraFuuko/Helium](https://github.com/AsakuraFuuko/Helium). The upstream source tree and GPL-3.0 license are retained. See [LICENSE](LICENSE) for the full license text.
+
+Helium-3 changes should be clearly identified as modifications to the upstream project.
