@@ -259,7 +259,7 @@ struct HeliumShortcutsProvider: AppShortcutsProvider {
             phrases: ["控制 \(.applicationName) HUD", "切换 \(.applicationName) HUD"],
             shortTitle: "HUD 开关",
             systemImageName: "switch.2"
-        )
+        ),
         AppShortcut(
             intent: HeliumListWidgetSetsIntent(),
             phrases: ["列出 \(.applicationName) 小部件集"],
