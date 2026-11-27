@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftUI
 
 struct PresetStruct: Identifiable {
     var id = UUID()
