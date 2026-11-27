@@ -178,7 +178,8 @@ struct HeliumSetWidgetSetEnabledIntent: AppIntent {
 
         sets[index]["isEnabled"] = newValue
         try HeliumShortcutStore.setWidgetSets(sets)
-        return .result(value: "「\\(title)」\\(newValue ? "已启用" : "已停用")；HUD 总开关未改变。")
+        let state = newValue ? "已启用" : "已停用"
+        return .result(value: "「\(title)」\(state)；HUD 总开关未改变。")
     }
 }
 
