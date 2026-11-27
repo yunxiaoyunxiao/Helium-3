@@ -51,7 +51,8 @@ $(APPLICATION_NAME)_PRIVATE_FRAMEWORKS += BackBoardServices GraphicsServices IOK
 $(APPLICATION_NAME)_LDFLAGS += -F$(THEOS)/sdks/iPhoneOS16.5.sdk/System/Library/PrivateFrameworks
 # Resolve SwiftUI's linker force-load shim from the selected iPhoneOS SDK.
 IOS_SDK_PATH := $(shell xcrun --sdk iphoneos --show-sdk-path)
-$(APPLICATION_NAME)_LDFLAGS += -L$(IOS_SDK_PATH)/usr/lib/swift -lswiftUIKit
+TARGET_SWIFT_LDPATHS += $(IOS_SDK_PATH)/usr/lib/swift
+$(APPLICATION_NAME)_LIBRARIES += swiftUIKit
 
 ifeq ($(TARGET_CODESIGN),ldid)
 $(APPLICATION_NAME)_CODESIGN_FLAGS += -Sent.plist
