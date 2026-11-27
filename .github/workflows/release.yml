@@ -1,9 +1,13 @@
-name: Build Helium Release
+name: Build Helium-3 Release
 
 on:
   push:
     tags:
       - "v*.*.**"
+
+concurrency:
+  group: helium-3-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   THEOS: ''
