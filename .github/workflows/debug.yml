@@ -84,6 +84,25 @@ jobs:
           echo $msT
           echo $logT
 
+      - name: Prepare Swift App Intents metadata extraction
+        run: |
+          cd "$GITHUB_WORKSPACE/Helium"
+          cat > AppIntentsProtocols.txt <<'EOF'
+          AppIntents.AppIntent
+          AppIntents.AppShortcutsProvider
+          EOF
+          RULES="$THEOS/makefiles/instance/rules.mk"
+          python3 - "$RULES" <<'PY'
+          import json, pathlib, sys
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text()
+          needle = '$(ECHO_NOTHING)$(TARGET_SWIFT_SUPPORT_BIN)/generate-output-file-map $(THEOS_OBJ_DIR) $(_THEOS_OBJ_FILE_TAG) $(SWIFT_FILES) > $@$(ECHO_END)'
+          patch = needle + '\\n\\t$(ECHO_NOTHING)python3 -c \'import json,sys; p=sys.argv[1]; d=json.load(open(p)); [v.update({"const-values":v["object"]+".swiftconstvalues"}) for k,v in d.items() if k and "object" in v]; json.dump(d,open(p,"w"))\' "$@"$(ECHO_END)'
+          if needle not in text:
+              raise SystemExit("Could not patch Theos Swift output file map")
+          path.write_text(text.replace(needle, patch, 1))
+          PY
+
       - name: Make IPA
         run: |
           cd $GITHUB_WORKSPACE/Helium
@@ -103,6 +122,11 @@ jobs:
             echo "App Intents metadata processor not found: $PROCESSOR"
             exit 1
           fi
+          find "$GITHUB_WORKSPACE/Helium/src" -name '*.swift' -print | sort > "$RUNNER_TEMP/Helium.SwiftFileList"
+          find "$GITHUB_WORKSPACE/Helium/.theos/obj/debug/arm64" -name '*.swiftconstvalues' -print | sort > "$RUNNER_TEMP/Helium.SwiftConstValuesFileList"
+          echo "Swift source files: $(wc -l < "$RUNNER_TEMP/Helium.SwiftFileList")"
+          echo "Swift const-value files: $(wc -l < "$RUNNER_TEMP/Helium.SwiftConstValuesFileList")"
+          test -s "$RUNNER_TEMP/Helium.SwiftConstValuesFileList"
           "$PROCESSOR" \
             --toolchain-dir "$TOOLCHAIN" \
             --sdk-root "$SDK" \
@@ -114,7 +138,9 @@ jobs:
             --module-name Helium \
             --output "$APP" \
             --binary-file "$APP/Helium" \
-            --source-files "$GITHUB_WORKSPACE/Helium/src/controllers/HeliumShortcuts.swift"
+            --source-file-list "$RUNNER_TEMP/Helium.SwiftFileList" \
+            --swift-const-vals-list "$RUNNER_TEMP/Helium.SwiftConstValuesFileList" \
+            --compile-time-extraction
           test -s "$APP/Metadata.appintents/extract.actionsdata"
           cd "$RUNNER_TEMP/helium-unpacked"
           zip -qr "$GITHUB_WORKSPACE/Helium/build/Helium.tipa" Payload

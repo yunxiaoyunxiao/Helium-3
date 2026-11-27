@@ -43,6 +43,8 @@ $(APPLICATION_NAME)_FILES += $(wildcard $(WIDGETS_DIR)/*.m)
 $(APPLICATION_NAME)_CFLAGS += -fobjc-arc -Iinclude
 $(APPLICATION_NAME)_CFLAGS += -include hud-prefix.pch -Wno-deprecated-declarations
 $(APPLICATION_NAME)_SWIFTFLAGS += -import-objc-header src/bridging/Helium-Bridging-Header.h
+# Emit compile-time App Intents values for the Shortcuts app metadata extractor.
+$(APPLICATION_NAME)_SWIFTFLAGS += -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend $(CURDIR)/AppIntentsProtocols.txt
 
 $(APPLICATION_NAME)_FRAMEWORKS += CoreGraphics QuartzCore UIKit Foundation SwiftUI
 $(APPLICATION_NAME)_WEAK_FRAMEWORKS += AppIntents
