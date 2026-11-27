@@ -47,6 +47,8 @@ $(APPLICATION_NAME)_SWIFTFLAGS += -import-objc-header src/bridging/Helium-Bridgi
 $(APPLICATION_NAME)_FRAMEWORKS += CoreGraphics QuartzCore UIKit Foundation SwiftUI
 $(APPLICATION_NAME)_WEAK_FRAMEWORKS += AppIntents
 $(APPLICATION_NAME)_PRIVATE_FRAMEWORKS += BackBoardServices GraphicsServices IOKit SpringBoardServices
+# Theos legacy SDK contains private-framework linker stubs absent from Apple's public SDK.
+$(APPLICATION_NAME)_LDFLAGS += -F$(THEOS)/sdks/iPhoneOS16.5.sdk/System/Library/PrivateFrameworks
 
 ifeq ($(TARGET_CODESIGN),ldid)
 $(APPLICATION_NAME)_CODESIGN_FLAGS += -Sent.plist
