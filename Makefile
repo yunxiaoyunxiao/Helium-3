@@ -49,6 +49,9 @@ $(APPLICATION_NAME)_WEAK_FRAMEWORKS += AppIntents
 $(APPLICATION_NAME)_PRIVATE_FRAMEWORKS += BackBoardServices GraphicsServices IOKit SpringBoardServices
 # Theos legacy SDK contains private-framework linker stubs absent from Apple's public SDK.
 $(APPLICATION_NAME)_LDFLAGS += -F$(THEOS)/sdks/iPhoneOS16.5.sdk/System/Library/PrivateFrameworks
+# Resolve SwiftUI's linker force-load shim from the selected iPhoneOS SDK.
+IOS_SDK_PATH := $(shell xcrun --sdk iphoneos --show-sdk-path)
+$(APPLICATION_NAME)_LDFLAGS += -L$(IOS_SDK_PATH)/usr/lib/swift -lswiftUIKit
 
 ifeq ($(TARGET_CODESIGN),ldid)
 $(APPLICATION_NAME)_CODESIGN_FLAGS += -Sent.plist
