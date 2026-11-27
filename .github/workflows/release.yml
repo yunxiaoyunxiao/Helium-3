@@ -104,6 +104,9 @@ jobs:
             --sdk-root "$SDK" \
             --deployment-target 14.0 \
             --target-triple arm64-apple-ios14.0 \
+            --platform-family iOS \
+            --bundle-identifier com.leemin.helium \
+            --xcode-version "$(xcodebuild -version | awk '/Build version/ {print $3}')" \
             --module-name Helium \
             --output "$APP" \
             --binary-file "$APP/Helium" \
