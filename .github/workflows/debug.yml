@@ -97,7 +97,7 @@ jobs:
           path = pathlib.Path(sys.argv[1])
           text = path.read_text()
           needle = '$(ECHO_NOTHING)$(TARGET_SWIFT_SUPPORT_BIN)/generate-output-file-map $(THEOS_OBJ_DIR) $(_THEOS_OBJ_FILE_TAG) $(SWIFT_FILES) > $@$(ECHO_END)'
-          patch = needle + '\\n\\t$(ECHO_NOTHING)python3 -c \'import json,sys; p=sys.argv[1]; d=json.load(open(p)); [v.update({"const-values":v["object"]+".swiftconstvalues"}) for k,v in d.items() if k and "object" in v]; json.dump(d,open(p,"w"))\' "$@"$(ECHO_END)'
+          patch = needle + '\n\t$(ECHO_NOTHING)python3 -c \'import json,sys; p=sys.argv[1]; d=json.load(open(p)); [v.update({"const-values":v["object"]+".swiftconstvalues"}) for k,v in d.items() if k and "object" in v]; json.dump(d,open(p,"w"))\' "$@"$(ECHO_END)'
           if needle not in text:
               raise SystemExit("Could not patch Theos Swift output file map")
           path.write_text(text.replace(needle, patch, 1))
