@@ -256,15 +256,33 @@ struct HeliumShortcutsProvider: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: HeliumControlHUDIntent(),
-            phrases: ["控制 \(.applicationName) HUD", "切换 \(.applicationName) HUD"],
+            phrases: ["控制 \\(.applicationName) HUD", "切换 \\(.applicationName) HUD"],
             shortTitle: "HUD 开关",
             systemImageName: "switch.2"
         ),
         AppShortcut(
             intent: HeliumListWidgetSetsIntent(),
-            phrases: ["列出 \(.applicationName) 小部件集"],
+            phrases: ["列出 \\(.applicationName) 小部件集"],
             shortTitle: "小部件集列表",
             systemImageName: "list.bullet"
+        ),
+        AppShortcut(
+            intent: HeliumGetWidgetSetIntent(),
+            phrases: ["读取 \\(.applicationName) 小部件集配置"],
+            shortTitle: "读取小部件集",
+            systemImageName: "doc.text.magnifyingglass"
+        ),
+        AppShortcut(
+            intent: HeliumSetWidgetSetEnabledIntent(),
+            phrases: ["启用或停用 \\(.applicationName) 小部件集"],
+            shortTitle: "小部件集开关",
+            systemImageName: "power"
+        ),
+        AppShortcut(
+            intent: HeliumUpdateWidgetSetIntent(),
+            phrases: ["修改 \\(.applicationName) 小部件集配置"],
+            shortTitle: "修改小部件集",
+            systemImageName: "slider.horizontal.3"
         )
     }
 }
