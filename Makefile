@@ -53,7 +53,7 @@ $(APPLICATION_NAME)_LDFLAGS += -F$(THEOS)/sdks/iPhoneOS16.5.sdk/System/Library/P
 IOS_SDK_PATH := $(shell xcrun --sdk iphoneos --show-sdk-path)
 SWIFT_RUNTIME_DIR := $(shell xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/iphoneos
 TARGET_SWIFT_LDPATHS += $(SWIFT_RUNTIME_DIR)
-$(APPLICATION_NAME)_LIBRARIES += swiftUIKit
+$(APPLICATION_NAME)_LDFLAGS += -L$(SWIFT_RUNTIME_DIR) $(SWIFT_RUNTIME_DIR)/libswiftUIKit.dylib
 
 ifeq ($(TARGET_CODESIGN),ldid)
 $(APPLICATION_NAME)_CODESIGN_FLAGS += -Sent.plist
