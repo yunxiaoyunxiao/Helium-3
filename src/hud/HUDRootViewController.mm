@@ -208,9 +208,9 @@ static void ReloadHUD
         double textAlpha = getDoubleFromDictKey(properties, @"textAlpha", 1.0);
         BOOL dynamicColor = getBoolFromDictKey(properties, @"dynamicColor", true);
         
-        labelView.textAlignment = textAlign;
+        labelView.textAlignment = (NSTextAlignment)textAlign;
         labelView.font = textFont;
-        maskLabelView.textAlignment = textAlign;
+        maskLabelView.textAlignment = (NSTextAlignment)textAlign;
         maskLabelView.font = textFont;
         maskLabelView.textColor = [UIColor whiteColor];
 
