@@ -386,10 +386,17 @@ static void ReloadHUD
             if ([[widget objectForKey:@"widgetID"] integerValue] != 10)
                 continue;
 
-            NSString *imagePath = [widget objectForKey:@"imagePath"];
-            if (![imagePath isKindOfClass:[NSString class]] || imagePath.length == 0)
-                continue;
-            UIImage *image = [UIImage imageWithContentsOfFile:imagePath];
+            NSData *imageData = [widget objectForKey:@"imageData"];
+            UIImage *image = nil;
+            if ([imageData isKindOfClass:[NSData class]] && imageData.length > 0) {
+                image = [UIImage imageWithData:imageData];
+            }
+            // Backward compatibility for configurations created by earlier test builds.
+            if (!image) {
+                NSString *imagePath = [widget objectForKey:@"imagePath"];
+                if ([imagePath isKindOfClass:[NSString class]] && imagePath.length > 0)
+                    image = [UIImage imageWithContentsOfFile:imagePath];
+            }
             if (!image)
                 continue;
             if ([widget objectForKey:@"imageEnabled"] && ![[widget objectForKey:@"imageEnabled"] boolValue])
