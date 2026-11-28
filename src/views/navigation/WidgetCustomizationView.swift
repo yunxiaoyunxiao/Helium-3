@@ -120,7 +120,6 @@ struct WidgetCustomizationView: View {
 // MARK: Widget Add View
 struct WidgetAddView: View {
     @Binding var isOpen: Bool
-    @State private var showingFloatImageSettings = false
     
     var onChoice: (WidgetModule) -> ()
     
@@ -140,16 +139,6 @@ struct WidgetAddView: View {
                     Text(NSLocalizedString("Widgets", comment: ""))
                 }
                 
-                Section {
-                    NavigationLink(destination: FloatImageSettingsView()) {
-                        WidgetChoiceView(
-                            widgetName: NSLocalizedString("Floating Image", comment: ""),
-                            exampleText: "🖼️"
-                        )
-                    }
-                } header: {
-                    Text(NSLocalizedString("Additional Features", comment: ""))
-                }
             }
             .navigationTitle(Text(NSLocalizedString("Add Widget", comment: "")))
             .navigationBarItems(trailing: Button(NSLocalizedString("Done", comment: "")) {
