@@ -363,7 +363,8 @@ struct WidgetPreferencesView: View {
                     selectedFloatingImage = savedImage
                     imageStatus = NSLocalizedString("Image saved", comment: "")
                     modified = true
-                    saveChanges();
+                    saveChanges()
+                    ensureFloatingImageHUDIsRunning()
                 },
                 onError: { imageStatus = $0 }
             )
@@ -421,6 +422,24 @@ struct WidgetPreferencesView: View {
         widgetID.config["imageOpacity"] = imageOpacity
         widgetID.config["imageEnabled"] = imageEnabled
         widgetManager.updateWidgetConfig(widgetSet: widgetSet, id: widgetID, newID: widgetID)
+        if imageEnabled {
+            ensureFloatingImageHUDIsRunning()
+        } else {
+            DarwinNotificationCenter.default.post(name: NOTIFY_RELOAD_HUD)
+        }
+    }
+
+    // Preserve the standalone feature's HUD startup behavior after migration.
+    private func ensureFloatingImageHUDIsRunning() {
+        guard imageEnabled else { return }
+        if !IsHUDEnabledBridger() {
+            SetHUDEnabledBridger(true)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                DarwinNotificationCenter.default.post(name: NOTIFY_RELOAD_HUD)
+            }
+        } else {
+            DarwinNotificationCenter.default.post(name: NOTIFY_RELOAD_HUD)
+        }
     }
 
     func getFormattedDate(_ format: String) -> String {
