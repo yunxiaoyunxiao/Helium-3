@@ -32,6 +32,7 @@ struct WidgetPreferencesView: View {
     @State private var imageOpacity = 0.85
     @State private var imageEnabled = true
     @State private var imageStatus = NSLocalizedString("No image selected", comment: "")
+    @State private var selectedFloatingImage: UIImage? = nil
     
     let timeFormats: [String] = [
         "hh:mm",
@@ -240,7 +241,7 @@ struct WidgetPreferencesView: View {
                     Button(action: { showingImagePicker = true }) {
                         Label(NSLocalizedString("Choose Image", comment: ""), systemImage: "photo")
                     }
-                    if let path = widgetID.config["imagePath"] as? String, let image = UIImage(contentsOfFile: path) {
+                    if let image = selectedFloatingImage ?? ((widgetID.config["imagePath"] as? String).flatMap { UIImage(contentsOfFile: $0) }) {
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFit()
@@ -275,6 +276,9 @@ struct WidgetPreferencesView: View {
                     imageY = widgetID.config["imageY"] as? Double ?? 0
                     imageOpacity = widgetID.config["imageOpacity"] as? Double ?? 0.85
                     imageEnabled = widgetID.config["imageEnabled"] as? Bool ?? true
+                    if let path = widgetID.config["imagePath"] as? String {
+                        selectedFloatingImage = UIImage(contentsOfFile: path)
+                    }
                 }
             case .weather:
                 ScrollView(.vertical, showsIndicators: false) {
@@ -346,10 +350,23 @@ struct WidgetPreferencesView: View {
                     let normalized = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
                     let path = "/var/mobile/Library/Preferences/com.leemin.helium.floatimage.\(widgetID.id.uuidString).png"
                     do {
-                        try normalized.pngData()?.write(to: URL(fileURLWithPath: path), options: .atomic)
+                        guard let data = normalized.pngData() else {
+                            imageStatus = NSLocalizedString("Could not encode PNG image", comment: "")
+                            return
+                        }
+                        let directory = URL(fileURLWithPath: path).deletingLastPathComponent()
+                        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                        try data.write(to: URL(fileURLWithPath: path), options: .atomic)
+                        guard FileManager.default.fileExists(atPath: path),
+                              let savedImage = UIImage(contentsOfFile: path) else {
+                            imageStatus = NSLocalizedString("Image file could not be verified after saving", comment: "")
+                            return
+                        }
+                        selectedFloatingImage = savedImage
                         widgetID.config["imagePath"] = path
                         imageStatus = NSLocalizedString("Image saved", comment: "")
-                        persistFloatingImageSettings()
+                        modified = true
+                        saveChanges()
                     } catch {
                         imageStatus = error.localizedDescription
                     }
