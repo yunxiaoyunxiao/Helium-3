@@ -107,6 +107,12 @@ struct WidgetPreviewsView: View {
             text = "50\(widget.config["showPercentage"] as? Bool ?? true ? "%" : "")"
         case .chargeSymbol:
             image = widget.config["filled"] as? Bool ?? true ? Image(systemName: "bolt.fill") : Image(systemName: "bolt")
+        case .floatingImage:
+            if let path = widget.config["imagePath"] as? String, let uiImage = UIImage(contentsOfFile: path) {
+                image = Image(uiImage: uiImage)
+            } else {
+                text = "🖼️"
+            }
         }
         widget.modified = false
     }
