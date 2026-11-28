@@ -120,11 +120,7 @@ static void ReloadHUD
     UIView *_horizontalLine;
     UIView *_verticalLine;
 
-    UIImageView *_floatingImageView;
-    NSLayoutConstraint *_floatingImageCenterX;
-    NSLayoutConstraint *_floatingImageCenterY;
-    NSLayoutConstraint *_floatingImageWidth;
-    NSLayoutConstraint *_floatingImageHeight;
+    NSMutableArray<UIImageView *> *_floatingImageViews;
 }
 
 - (void)registerNotifications
@@ -323,6 +319,7 @@ static void ReloadHUD
         _labelViews = [NSMutableArray array];
         _backdropViews = [NSMutableArray array];
         _maskLabelViews = [NSMutableArray array];
+        _floatingImageViews = [NSMutableArray array];
         _orientationObserver = [[objc_getClass("FBSOrientationObserver") alloc] init];
         __weak HUDRootViewController *weakSelf = self;
         [_orientationObserver setHandler:^(FBSOrientationUpdate *orientationUpdate) {
@@ -368,64 +365,60 @@ static void ReloadHUD
 
     [self createWidgetSetsView];
 
-    // The image is rendered by the already-hosted system HUD window, so it can
-    // remain visible while the user switches between apps. The HUD window
-    // ignores hit testing; the image itself is also deliberately touch-through.
-    _floatingImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
-    _floatingImageView.translatesAutoresizingMaskIntoConstraints = NO;
-    _floatingImageView.contentMode = UIViewContentModeScaleAspectFit;
-    _floatingImageView.userInteractionEnabled = NO;
-    _floatingImageView.backgroundColor = UIColor.clearColor;
-    _floatingImageView.hidden = YES;
-    [self.view addSubview:_floatingImageView];
-
-    _floatingImageCenterX = [_floatingImageView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor];
-    _floatingImageCenterY = [_floatingImageView.centerYAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.centerYAnchor];
-    _floatingImageWidth = [_floatingImageView.widthAnchor constraintEqualToConstant:180.0];
-    _floatingImageHeight = [_floatingImageView.heightAnchor constraintEqualToConstant:180.0];
-    [NSLayoutConstraint activateConstraints:@[
-        _floatingImageCenterX, _floatingImageCenterY,
-        _floatingImageWidth, _floatingImageHeight
-    ]];
-
     [self reloadFloatingImage];
     notify_post(NOTIFY_RELOAD_HUD);
 }
 
 - (void)reloadFloatingImage
 {
-    if (!_floatingImageView)
-        return;
+    for (UIImageView *view in _floatingImageViews) {
+        [view removeFromSuperview];
+    }
+    [_floatingImageViews removeAllObjects];
 
-    NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:USER_DEFAULTS_PATH] ?: @{};
-    NSString *imagePath = [settings objectForKey:@"floatImagePath"];
-    BOOL isEnabled = [[settings objectForKey:@"floatImageEnabled"] boolValue];
-
-    // Floating image belongs to the widget-set experience: hide it whenever
-    // every widget set has been disabled by the user.
-    NSArray *widgetSets = [settings objectForKey:@"widgetProperties"];
-    BOOL hasEnabledWidgetSet = NO;
+    NSArray *widgetSets = [self widgetProperties];
     for (NSDictionary *widgetSet in widgetSets) {
-        if ([[widgetSet objectForKey:@"isEnabled"] boolValue]) {
-            hasEnabledWidgetSet = YES;
-            break;
+        if (![[widgetSet objectForKey:@"isEnabled"] boolValue])
+            continue;
+
+        NSArray *widgetIDs = [widgetSet objectForKey:@"widgetIDs"];
+        for (NSDictionary *widget in widgetIDs) {
+            if ([[widget objectForKey:@"widgetID"] integerValue] != 10)
+                continue;
+
+            NSString *imagePath = [widget objectForKey:@"imagePath"];
+            if (![imagePath isKindOfClass:[NSString class]] || imagePath.length == 0)
+                continue;
+            UIImage *image = [UIImage imageWithContentsOfFile:imagePath];
+            if (!image)
+                continue;
+            if ([widget objectForKey:@"imageEnabled"] && ![[widget objectForKey:@"imageEnabled"] boolValue])
+                continue;
+
+            CGFloat size = [[widget objectForKey:@"imageSize"] doubleValue];
+            if (size < 1.0) size = 180.0;
+            CGFloat offsetX = [[widget objectForKey:@"imageX"] doubleValue];
+            CGFloat offsetY = [[widget objectForKey:@"imageY"] doubleValue];
+            CGFloat opacity = [[widget objectForKey:@"imageOpacity"] doubleValue];
+            if (opacity <= 0.0) opacity = 0.85;
+
+            UIImageView *imageView = [[UIImageView alloc] initWithImage:image];
+            imageView.translatesAutoresizingMaskIntoConstraints = NO;
+            imageView.contentMode = UIViewContentModeScaleAspectFit;
+            imageView.userInteractionEnabled = NO;
+            imageView.backgroundColor = UIColor.clearColor;
+            imageView.alpha = MIN(1.0, MAX(0.05, opacity));
+            [self.view addSubview:imageView];
+            [self.view bringSubviewToFront:imageView];
+            [NSLayoutConstraint activateConstraints:@[
+                [imageView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor constant:offsetX],
+                [imageView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:offsetY],
+                [imageView.widthAnchor constraintEqualToConstant:size],
+                [imageView.heightAnchor constraintEqualToConstant:size]
+            ]];
+            [_floatingImageViews addObject:imageView];
         }
     }
-
-    UIImage *image = imagePath.length ? [UIImage imageWithContentsOfFile:imagePath] : nil;
-
-    _floatingImageView.image = image;
-    _floatingImageView.hidden = !(isEnabled && hasEnabledWidgetSet && image != nil);
-    _floatingImageView.alpha = MIN(1.0, MAX(0.05, [[settings objectForKey:@"floatImageOpacity"] doubleValue]));
-
-    CGFloat imageSize = [[settings objectForKey:@"floatImageSize"] doubleValue];
-    if (imageSize < 1.0)
-        imageSize = 180.0;
-
-    _floatingImageWidth.constant = imageSize;
-    _floatingImageHeight.constant = imageSize;
-    _floatingImageCenterX.constant = [[settings objectForKey:@"floatImageX"] doubleValue];
-    _floatingImageCenterY.constant = [[settings objectForKey:@"floatImageY"] doubleValue];
 }
 
 - (void)viewDidAppear:(BOOL)animated
