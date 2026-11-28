@@ -7,6 +7,9 @@
 
 import Foundation
 import SwiftUI
+import PhotosUI
+import UniformTypeIdentifiers
+import UIKit
 
 struct WidgetPreferencesView: View {
     @ObservedObject var widgetManager: WidgetManager
@@ -22,6 +25,13 @@ struct WidgetPreferencesView: View {
     
     @State var modified: Bool = false
     @State private var isPresented = false
+    @State private var showingImagePicker = false
+    @State private var imageSize = 180.0
+    @State private var imageX = 0.0
+    @State private var imageY = 0.0
+    @State private var imageOpacity = 0.85
+    @State private var imageEnabled = true
+    @State private var imageStatus = NSLocalizedString("No image selected", comment: "")
     
     let timeFormats: [String] = [
         "hh:mm",
@@ -225,6 +235,48 @@ struct WidgetPreferencesView: View {
                         boolSelection = widgetID.config["filled"] as? Bool ?? true
                     }
                 }
+            case .floatingImage:
+                VStack(alignment: .leading, spacing: 14) {
+                    Button(action: { showingImagePicker = true }) {
+                        Label(NSLocalizedString("Choose Image", comment: ""), systemImage: "photo")
+                    }
+                    if let path = widgetID.config["imagePath"] as? String, let image = UIImage(contentsOfFile: path) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 220)
+                            .frame(maxWidth: .infinity)
+                    } else {
+                        Text(imageStatus).foregroundColor(.secondary)
+                    }
+                    Toggle(NSLocalizedString("Enable Floating Image", comment: ""), isOn: $imageEnabled)
+                    VStack(alignment: .leading) {
+                        Text("\(NSLocalizedString("Image Size", comment: "")): \(Int(imageSize)) pt")
+                        Slider(value: $imageSize, in: 40...700)
+                    }
+                    VStack(alignment: .leading) {
+                        Text("X: \(Int(imageX)) pt")
+                        Slider(value: $imageX, in: -2048...2048)
+                    }
+                    VStack(alignment: .leading) {
+                        Text("Y: \(Int(imageY)) pt")
+                        Slider(value: $imageY, in: -2048...2048)
+                    }
+                    VStack(alignment: .leading) {
+                        Text("\(NSLocalizedString("Opacity", comment: "")): \(Int(imageOpacity * 100))%")
+                        Slider(value: $imageOpacity, in: 0.05...1.0)
+                    }
+                    Text(NSLocalizedString("Each widget set stores its own image and display parameters.", comment: ""))
+                        .font(.caption).foregroundColor(.secondary)
+                }
+                .onAppear {
+                    imageSize = widgetID.config["imageSize"] as? Double ?? 180
+                    imageX = widgetID.config["imageX"] as? Double ?? 0
+                    imageY = widgetID.config["imageY"] as? Double ?? 0
+                    imageOpacity = widgetID.config["imageOpacity"] as? Double ?? 0.85
+                    imageEnabled = widgetID.config["imageEnabled"] as? Bool ?? true
+                }
+                .onChange(of::dummy) { _ in }
             case .weather:
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack {
@@ -285,6 +337,32 @@ struct WidgetPreferencesView: View {
             }
         }
         .padding(.horizontal, 15)
+        .sheet(isPresented: $showingImagePicker) {
+            FloatImagePicker(
+                onImagePicked: { image in
+                    let longestSide = max(image.size.width, image.size.height)
+                    let factor = min(1.0, 2048.0 / max(longestSide, 1))
+                    let size = CGSize(width: max(1, image.size.width * factor), height: max(1, image.size.height * factor))
+                    let renderer = UIGraphicsImageRenderer(size: size)
+                    let normalized = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
+                    let path = "/var/mobile/Library/Preferences/com.leemin.helium.floatimage.\(widgetID.id.uuidString).png"
+                    do {
+                        try normalized.pngData()?.write(to: URL(fileURLWithPath: path), options: .atomic)
+                        widgetID.config["imagePath"] = path
+                        imageStatus = NSLocalizedString("Image saved", comment: "")
+                        persistFloatingImageSettings()
+                    } catch {
+                        imageStatus = error.localizedDescription
+                    }
+                },
+                onError: { imageStatus = $0 }
+            )
+        }
+        .onChange(of: imageSize) { _ in persistFloatingImageSettings() }
+        .onChange(of: imageX) { _ in persistFloatingImageSettings() }
+        .onChange(of: imageY) { _ in persistFloatingImageSettings() }
+        .onChange(of: imageOpacity) { _ in persistFloatingImageSettings() }
+        .onChange(of: imageEnabled) { _ in persistFloatingImageSettings() }
         .toolbar {
             HStack {
                 // MARK: Save Button
@@ -325,6 +403,16 @@ struct WidgetPreferencesView: View {
         }
     }
     
+    private func persistFloatingImageSettings() {
+        guard widgetID.module == .floatingImage else { return }
+        widgetID.config["imageSize"] = imageSize
+        widgetID.config["imageX"] = imageX
+        widgetID.config["imageY"] = imageY
+        widgetID.config["imageOpacity"] = imageOpacity
+        widgetID.config["imageEnabled"] = imageEnabled
+        widgetManager.updateWidgetConfig(widgetSet: widgetSet, id: widgetID, newID: widgetID)
+    }
+
     func getFormattedDate(_ format: String) -> String {
         let locale = UserDefaults.standard.string(forKey: "dateLocale", forPath: USER_DEFAULTS_PATH) ?? "en_US"
         dateFormatter.locale = Locale(identifier: locale)
@@ -376,6 +464,12 @@ struct WidgetPreferencesView: View {
         case .chargeSymbol:
             // MARK: Charge Symbol Fill Handling
             widgetStruct.config["filled"] = boolSelection
+        case .floatingImage:
+            widgetStruct.config["imageSize"] = imageSize
+            widgetStruct.config["imageX"] = imageX
+            widgetStruct.config["imageY"] = imageY
+            widgetStruct.config["imageOpacity"] = imageOpacity
+            widgetStruct.config["imageEnabled"] = imageEnabled
         case .weather:
             // MARK: Weather Handling
             if text == "" {
