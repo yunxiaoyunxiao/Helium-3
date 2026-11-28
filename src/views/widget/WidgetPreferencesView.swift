@@ -276,7 +276,6 @@ struct WidgetPreferencesView: View {
                     imageOpacity = widgetID.config["imageOpacity"] as? Double ?? 0.85
                     imageEnabled = widgetID.config["imageEnabled"] as? Bool ?? true
                 }
-                .onChange(of::dummy) { _ in }
             case .weather:
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack {
