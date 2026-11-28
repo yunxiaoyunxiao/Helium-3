@@ -108,7 +108,9 @@ struct WidgetPreviewsView: View {
         case .chargeSymbol:
             image = widget.config["filled"] as? Bool ?? true ? Image(systemName: "bolt.fill") : Image(systemName: "bolt")
         case .floatingImage:
-            if let path = widget.config["imagePath"] as? String, let uiImage = UIImage(contentsOfFile: path) {
+            if let data = widget.config["imageData"] as? Data, let uiImage = UIImage(data: data) {
+                image = Image(uiImage: uiImage)
+            } else if let path = widget.config["imagePath"] as? String, let uiImage = UIImage(contentsOfFile: path) {
                 image = Image(uiImage: uiImage)
             } else {
                 text = "🖼️"
