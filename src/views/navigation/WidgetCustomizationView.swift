@@ -17,8 +17,14 @@ struct WidgetCustomizationView: View {
     var body: some View {
         NavigationView {
             VStack {
-                // List of Widget Sets
+                // List of Widget Sets and custom floating image controls
                 List {
+                    Section {
+                        FloatImageSettingsSection()
+                    } header: {
+                        Label(NSLocalizedString("Custom Features", comment: ""), systemImage: "slider.horizontal.3")
+                    }
+
                     ForEach($widgetManager.widgetSets) { widgetSet in
                         NavigationLink(destination: EditWidgetSetView(widgetManager: widgetManager, widgetSet: widgetSet.wrappedValue)) {
                             Text(widgetSet.title.wrappedValue)
