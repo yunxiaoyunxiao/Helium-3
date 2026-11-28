@@ -184,6 +184,83 @@ struct HeliumSetWidgetSetEnabledIntent: AppIntent {
 }
 
 @available(iOS 16.0, *)
+struct HeliumSetFloatingImageEnabledIntent: AppIntent {
+    static var title: LocalizedStringResource = "控制 Helium 图片悬浮"
+    static var description = IntentDescription("按小部件集单独开启、关闭、切换或查询图片悬浮，不影响其他小部件集。")
+    static var openAppWhenRun = false
+
+    @Parameter(title: "小部件集标题")
+    var widgetSetTitle: String
+
+    @Parameter(title: "操作（on/off/toggle/status）", default: "toggle")
+    var action: String
+
+    func perform() async throws -> some IntentResult & ReturnsValue<String> {
+        var sets = try HeliumShortcutStore.readWidgetSets()
+        guard let setIndex = HeliumShortcutStore.matchingIndex(title: widgetSetTitle, in: sets) else {
+            throw HeliumShortcutStore.ShortcutError.widgetSetNotFound(widgetSetTitle)
+        }
+        guard var widgets = sets[setIndex]["widgetIDs"] as? [[String: Any]] else {
+            throw HeliumShortcutStore.ShortcutError.invalidPreferences
+        }
+
+        let imageIndexes = widgets.indices.filter { (widgets[$0]["widgetID"] as? Int) == 10 }
+        guard !imageIndexes.isEmpty else {
+            return .result(value: "「\(widgetSetTitle)」中没有添加「图片悬浮」组件。")
+        }
+
+        let anyEnabled = imageIndexes.contains { widgets[$0]["imageEnabled"] as? Bool ?? true }
+        let newValue: Bool
+        switch action.lowercased() {
+        case "status", "状态":
+            return .result(value: "「\(widgetSetTitle)」图片悬浮当前\(anyEnabled ? "已开启" : "已关闭")。")
+        case "on", "开启":
+            newValue = true
+        case "off", "关闭":
+            newValue = false
+        case "toggle", "切换":
+            newValue = !anyEnabled
+        default:
+            throw HeliumShortcutStore.ShortcutError.invalidValue("操作")
+        }
+
+        for index in imageIndexes { widgets[index]["imageEnabled"] = newValue }
+        sets[setIndex]["widgetIDs"] = widgets
+        try HeliumShortcutStore.setWidgetSets(sets)
+
+        let configuredImageCount = imageIndexes.filter {
+            let data = widgets[$0]["imageData"] as? Data
+            let path = widgets[$0]["imagePath"] as? String
+            return data?.isEmpty == false || path?.isEmpty == false
+        }.count
+
+        if newValue,
+           (sets[setIndex]["isEnabled"] as? Bool ?? true),
+           configuredImageCount > 0 {
+            if !IsHUDEnabledBridger() {
+                SetHUDEnabledBridger(true)
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
+            }
+            CFNotificationCenterPostNotification(
+                CFNotificationCenterGetDarwinNotifyCenter(),
+                CFNotificationName(HeliumShortcutStore.reloadNotification as CFString),
+                nil,
+                nil,
+                true
+            )
+        }
+
+        if newValue && configuredImageCount == 0 {
+            return .result(value: "「\(widgetSetTitle)」图片悬浮开关已开启，但该组件尚未保存图片。")
+        }
+        if newValue && !(sets[setIndex]["isEnabled"] as? Bool ?? true) {
+            return .result(value: "图片悬浮已开启，但「\(widgetSetTitle)」小部件集当前处于停用状态；请先启用该小部件集。")
+        }
+        return .result(value: "「\(widgetSetTitle)」图片悬浮\(newValue ? "已开启" : "已关闭")；仅修改该小部件集。")
+    }
+}
+
+@available(iOS 16.0, *)
 struct HeliumUpdateWidgetSetIntent: AppIntent {
     static var title: LocalizedStringResource = "更新 Helium 小部件集"
     static var description = IntentDescription("仅更新提供的字段；未提供的字段保持原值。")
@@ -294,6 +371,12 @@ struct HeliumShortcutsProvider: AppShortcutsProvider {
             phrases: ["修改 \(.applicationName) 小部件集配置"],
             shortTitle: "修改小部件集",
             systemImageName: "slider.horizontal.3"
+        )
+        AppShortcut(
+            intent: HeliumSetFloatingImageEnabledIntent(),
+            phrases: ["控制 \(.applicationName) 图片悬浮", "切换 \(.applicationName) 图片悬浮"],
+            shortTitle: "图片悬浮开关",
+            systemImageName: "photo"
         )
     }
 }
