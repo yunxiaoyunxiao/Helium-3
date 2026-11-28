@@ -2,6 +2,7 @@ import Foundation
 import PhotosUI
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 private let floatImageFilePath = "/var/mobile/Library/Preferences/com.leemin.helium.floatimage.png"
 
@@ -119,9 +120,14 @@ struct FloatImageSettingsSection: View {
         }
         .onAppear(perform: loadSettings)
         .sheet(isPresented: $showingPicker) {
-            FloatImagePicker { image in
-                importImage(image)
-            }
+            FloatImagePicker(
+                onImagePicked: { image in
+                    importImage(image)
+                },
+                onError: { message in
+                    statusText = message
+                }
+            )
         }
     }
 
@@ -198,16 +204,17 @@ struct FloatImageSettingsSection: View {
 
 private struct FloatImagePicker: UIViewControllerRepresentable {
     let onImagePicked: (UIImage) -> Void
+    let onError: (String) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onImagePicked: onImagePicked)
+        Coordinator(onImagePicked: onImagePicked, onError: onError)
     }
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var configuration = PHPickerConfiguration(photoLibrary: .shared())
         configuration.filter = .images
         configuration.selectionLimit = 1
-        configuration.preferredAssetRepresentationMode = .current
+        configuration.preferredAssetRepresentationMode = .compatible
         let picker = PHPickerViewController(configuration: configuration)
         picker.delegate = context.coordinator
         return picker
@@ -217,19 +224,44 @@ private struct FloatImagePicker: UIViewControllerRepresentable {
 
     final class Coordinator: NSObject, PHPickerViewControllerDelegate {
         let onImagePicked: (UIImage) -> Void
+        let onError: (String) -> Void
 
-        init(onImagePicked: @escaping (UIImage) -> Void) {
+        init(onImagePicked: @escaping (UIImage) -> Void, onError: @escaping (String) -> Void) {
             self.onImagePicked = onImagePicked
+            self.onError = onError
         }
 
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             picker.dismiss(animated: true)
-            guard let provider = results.first?.itemProvider,
-                  provider.canLoadObject(ofClass: UIImage.self) else { return }
-            provider.loadObject(ofClass: UIImage.self) { [weak self] object, error in
-                guard let image = object as? UIImage, error == nil else { return }
+
+            guard let provider = results.first?.itemProvider else {
                 DispatchQueue.main.async {
-                    self?.onImagePicked(image)
+                    self.onError(NSLocalizedString("No image was returned by the photo picker", comment: ""))
+                }
+                return
+            }
+
+            let imageType = UTType.image.identifier
+            guard provider.hasItemConformingToTypeIdentifier(imageType) else {
+                DispatchQueue.main.async {
+                    self.onError(NSLocalizedString("The selected item is not a supported image", comment: ""))
+                }
+                return
+            }
+
+            provider.loadDataRepresentation(forTypeIdentifier: imageType) { [weak self] data, error in
+                guard let self else { return }
+                if let data, let image = UIImage(data: data) {
+                    DispatchQueue.main.async {
+                        self.onImagePicked(image)
+                    }
+                    return
+                }
+
+                let message = error?.localizedDescription
+                    ?? NSLocalizedString("Could not read the selected image", comment: "")
+                DispatchQueue.main.async {
+                    self.onError(message)
                 }
             }
         }
