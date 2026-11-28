@@ -124,16 +124,28 @@ struct WidgetAddView: View {
     var onChoice: (WidgetModule) -> ()
     
     var body: some View {
-        List {
-            ForEach(WidgetModule.allCases, id: \.self) { id in
-                Button(action: {
-                    isOpen = false
-                    onChoice(id)
-                }) {
-                    WidgetChoiceView(widgetName: WidgetDetails.getWidgetName(id), exampleText: WidgetDetails.getWidgetExample(id))
+        NavigationView {
+            List {
+                Section {
+                    ForEach(WidgetModule.allCases, id: \.self) { id in
+                        Button(action: {
+                            isOpen = false
+                            onChoice(id)
+                        }) {
+                            WidgetChoiceView(widgetName: WidgetDetails.getWidgetName(id), exampleText: WidgetDetails.getWidgetExample(id))
+                        }
+                    }
+                } header: {
+                    Text(NSLocalizedString("Widgets", comment: ""))
                 }
+                
             }
+            .navigationTitle(Text(NSLocalizedString("Add Widget", comment: "")))
+            .navigationBarItems(trailing: Button(NSLocalizedString("Done", comment: "")) {
+                isOpen = false
+            })
         }
+        .navigationViewStyle(StackNavigationViewStyle())
     }
 }
 

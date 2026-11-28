@@ -92,6 +92,7 @@ struct SettingsView: View {
                     Label(NSLocalizedString("Preferences", comment:""), systemImage: "gear")
                 }
                 
+
                 // Debug Settings
                 if #available(iOS 15, *), DEBUG_MODE_ENABLED {
                     Section {

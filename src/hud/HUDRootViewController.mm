@@ -98,6 +98,10 @@ static void ReloadHUD
 
 #pragma mark - HUDRootViewController
 
+@interface HUDRootViewController ()
+- (void)reloadFloatingImage;
+@end
+
 @implementation HUDRootViewController {
     NSMutableDictionary *_userDefaults;
     NSMutableArray <NSLayoutConstraint *> *_constraints;
@@ -115,6 +119,8 @@ static void ReloadHUD
 
     UIView *_horizontalLine;
     UIView *_verticalLine;
+
+    NSMutableArray<UIImageView *> *_floatingImageViews;
 }
 
 - (void)registerNotifications
@@ -168,6 +174,7 @@ static void ReloadHUD
 - (void) reloadUserDefaults
 {
     [self loadUserDefaults: YES];
+    [self reloadFloatingImage];
     
     if ([self debugBorder]) {
         _contentView.layer.borderWidth = 1.0;
@@ -312,6 +319,7 @@ static void ReloadHUD
         _labelViews = [NSMutableArray array];
         _backdropViews = [NSMutableArray array];
         _maskLabelViews = [NSMutableArray array];
+        _floatingImageViews = [NSMutableArray array];
         _orientationObserver = [[objc_getClass("FBSOrientationObserver") alloc] init];
         __weak HUDRootViewController *weakSelf = self;
         [_orientationObserver setHandler:^(FBSOrientationUpdate *orientationUpdate) {
@@ -356,7 +364,68 @@ static void ReloadHUD
     [_contentView addSubview:_verticalLine];
 
     [self createWidgetSetsView];
+
+    [self reloadFloatingImage];
     notify_post(NOTIFY_RELOAD_HUD);
+}
+
+- (void)reloadFloatingImage
+{
+    for (UIImageView *view in _floatingImageViews) {
+        [view removeFromSuperview];
+    }
+    [_floatingImageViews removeAllObjects];
+
+    NSArray *widgetSets = [self widgetProperties];
+    for (NSDictionary *widgetSet in widgetSets) {
+        if (![[widgetSet objectForKey:@"isEnabled"] boolValue])
+            continue;
+
+        NSArray *widgetIDs = [widgetSet objectForKey:@"widgetIDs"];
+        for (NSDictionary *widget in widgetIDs) {
+            if ([[widget objectForKey:@"widgetID"] integerValue] != 10)
+                continue;
+
+            NSData *imageData = [widget objectForKey:@"imageData"];
+            UIImage *image = nil;
+            if ([imageData isKindOfClass:[NSData class]] && imageData.length > 0) {
+                image = [UIImage imageWithData:imageData];
+            }
+            // Backward compatibility for configurations created by earlier test builds.
+            if (!image) {
+                NSString *imagePath = [widget objectForKey:@"imagePath"];
+                if ([imagePath isKindOfClass:[NSString class]] && imagePath.length > 0)
+                    image = [UIImage imageWithContentsOfFile:imagePath];
+            }
+            if (!image)
+                continue;
+            if ([widget objectForKey:@"imageEnabled"] && ![[widget objectForKey:@"imageEnabled"] boolValue])
+                continue;
+
+            CGFloat size = [[widget objectForKey:@"imageSize"] doubleValue];
+            if (size < 1.0) size = 180.0;
+            CGFloat offsetX = [[widget objectForKey:@"imageX"] doubleValue];
+            CGFloat offsetY = [[widget objectForKey:@"imageY"] doubleValue];
+            CGFloat opacity = [[widget objectForKey:@"imageOpacity"] doubleValue];
+            if (opacity <= 0.0) opacity = 0.85;
+
+            UIImageView *imageView = [[UIImageView alloc] initWithImage:image];
+            imageView.translatesAutoresizingMaskIntoConstraints = NO;
+            imageView.contentMode = UIViewContentModeScaleAspectFit;
+            imageView.userInteractionEnabled = NO;
+            imageView.backgroundColor = UIColor.clearColor;
+            imageView.alpha = MIN(1.0, MAX(0.05, opacity));
+            [self.view addSubview:imageView];
+            [self.view bringSubviewToFront:imageView];
+            [NSLayoutConstraint activateConstraints:@[
+                [imageView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor constant:offsetX],
+                [imageView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor constant:offsetY],
+                [imageView.widthAnchor constraintEqualToConstant:size],
+                [imageView.heightAnchor constraintEqualToConstant:size]
+            ]];
+            [_floatingImageViews addObject:imageView];
+        }
+    }
 }
 
 - (void)viewDidAppear:(BOOL)animated
