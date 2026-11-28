@@ -115,6 +115,12 @@ static void ReloadHUD
 
     UIView *_horizontalLine;
     UIView *_verticalLine;
+
+    UIImageView *_floatingImageView;
+    NSLayoutConstraint *_floatingImageCenterX;
+    NSLayoutConstraint *_floatingImageCenterY;
+    NSLayoutConstraint *_floatingImageWidth;
+    NSLayoutConstraint *_floatingImageHeight;
 }
 
 - (void)registerNotifications
@@ -168,6 +174,7 @@ static void ReloadHUD
 - (void) reloadUserDefaults
 {
     [self loadUserDefaults: YES];
+    [self reloadFloatingImage];
     
     if ([self debugBorder]) {
         _contentView.layer.borderWidth = 1.0;
@@ -356,7 +363,53 @@ static void ReloadHUD
     [_contentView addSubview:_verticalLine];
 
     [self createWidgetSetsView];
+
+    // The image is rendered by the already-hosted system HUD window, so it can
+    // remain visible while the user switches between apps. The HUD window
+    // ignores hit testing; the image itself is also deliberately touch-through.
+    _floatingImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
+    _floatingImageView.translatesAutoresizingMaskIntoConstraints = NO;
+    _floatingImageView.contentMode = UIViewContentModeScaleAspectFit;
+    _floatingImageView.userInteractionEnabled = NO;
+    _floatingImageView.backgroundColor = UIColor.clearColor;
+    _floatingImageView.hidden = YES;
+    [self.view addSubview:_floatingImageView];
+
+    _floatingImageCenterX = [_floatingImageView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor];
+    _floatingImageCenterY = [_floatingImageView.centerYAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.centerYAnchor];
+    _floatingImageWidth = [_floatingImageView.widthAnchor constraintEqualToConstant:180.0];
+    _floatingImageHeight = [_floatingImageView.heightAnchor constraintEqualToConstant:180.0];
+    [NSLayoutConstraint activateConstraints:@[
+        _floatingImageCenterX, _floatingImageCenterY,
+        _floatingImageWidth, _floatingImageHeight
+    ]];
+
+    [self reloadFloatingImage];
     notify_post(NOTIFY_RELOAD_HUD);
+}
+
+- (void)reloadFloatingImage
+{
+    if (!_floatingImageView)
+        return;
+
+    NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:USER_DEFAULTS_PATH] ?: @{};
+    NSString *imagePath = [settings objectForKey:@"floatImagePath"];
+    BOOL isEnabled = [[settings objectForKey:@"floatImageEnabled"] boolValue];
+    UIImage *image = imagePath.length ? [UIImage imageWithContentsOfFile:imagePath] : nil;
+
+    _floatingImageView.image = image;
+    _floatingImageView.hidden = !(isEnabled && image != nil);
+    _floatingImageView.alpha = MIN(1.0, MAX(0.05, [[settings objectForKey:@"floatImageOpacity"] doubleValue]));
+
+    CGFloat imageSize = [[settings objectForKey:@"floatImageSize"] doubleValue];
+    if (imageSize < 1.0)
+        imageSize = 180.0;
+
+    _floatingImageWidth.constant = imageSize;
+    _floatingImageHeight.constant = imageSize;
+    _floatingImageCenterX.constant = [[settings objectForKey:@"floatImageX"] doubleValue];
+    _floatingImageCenterY.constant = [[settings objectForKey:@"floatImageY"] doubleValue];
 }
 
 - (void)viewDidAppear:(BOOL)animated
