@@ -400,10 +400,22 @@ static void ReloadHUD
     NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:USER_DEFAULTS_PATH] ?: @{};
     NSString *imagePath = [settings objectForKey:@"floatImagePath"];
     BOOL isEnabled = [[settings objectForKey:@"floatImageEnabled"] boolValue];
+
+    // Floating image belongs to the widget-set experience: hide it whenever
+    // every widget set has been disabled by the user.
+    NSArray *widgetSets = [settings objectForKey:@"widgetProperties"];
+    BOOL hasEnabledWidgetSet = NO;
+    for (NSDictionary *widgetSet in widgetSets) {
+        if ([[widgetSet objectForKey:@"isEnabled"] boolValue]) {
+            hasEnabledWidgetSet = YES;
+            break;
+        }
+    }
+
     UIImage *image = imagePath.length ? [UIImage imageWithContentsOfFile:imagePath] : nil;
 
     _floatingImageView.image = image;
-    _floatingImageView.hidden = !(isEnabled && image != nil);
+    _floatingImageView.hidden = !(isEnabled && hasEnabledWidgetSet && image != nil);
     _floatingImageView.alpha = MIN(1.0, MAX(0.05, [[settings objectForKey:@"floatImageOpacity"] doubleValue]));
 
     CGFloat imageSize = [[settings objectForKey:@"floatImageSize"] doubleValue];
