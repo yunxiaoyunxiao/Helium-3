@@ -202,7 +202,7 @@ struct FloatImageSettingsSection: View {
     }
 }
 
-private struct FloatImagePicker: UIViewControllerRepresentable {
+struct FloatImagePicker: UIViewControllerRepresentable {
     let onImagePicked: (UIImage) -> Void
     let onError: (String) -> Void
 
