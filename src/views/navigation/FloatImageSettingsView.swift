@@ -9,7 +9,7 @@ private let floatImageFilePath = "/var/mobile/Library/Preferences/com.leemin.hel
 struct FloatImageSettingsSection: View {
     @State private var selectedImage: UIImage?
     @State private var imagePath: String = ""
-    @State private var isEnabled = false
+    var isWidgetSetEnabled: Bool = true
     @State private var imageSize = 180.0
     @State private var offsetX = 0.0
     @State private var offsetY = 0.0
@@ -42,17 +42,11 @@ struct FloatImageSettingsSection: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
 
-                Toggle(NSLocalizedString("Enable Floating Image", comment: ""), isOn: Binding(
-                    get: { isEnabled },
-                    set: { value in
-                        if value && selectedImage == nil {
-                            statusText = NSLocalizedString("Choose an image first", comment: "")
-                            return
-                        }
-                        isEnabled = value
-                        saveAndNotify()
-                    }
-                ))
+                Text(isWidgetSetEnabled
+                    ? NSLocalizedString("Widget set status: Enabled", comment: "")
+                    : NSLocalizedString("Widget set status: Disabled", comment: ""))
+                    .font(.footnote)
+                    .foregroundColor(isWidgetSetEnabled ? .green : .secondary)
 
                 VStack(alignment: .leading, spacing: 5) {
                     HStack {
@@ -134,7 +128,6 @@ struct FloatImageSettingsSection: View {
     private func loadSettings() {
         let values = UserDefaults.standard.loadUserDefaults(forPath: USER_DEFAULTS_PATH)
         imagePath = values["floatImagePath"] as? String ?? floatImageFilePath
-        isEnabled = values["floatImageEnabled"] as? Bool ?? false
         imageSize = values["floatImageSize"] as? Double ?? 180
         offsetX = values["floatImageX"] as? Double ?? 0
         offsetY = values["floatImageY"] as? Double ?? 0
@@ -145,7 +138,6 @@ struct FloatImageSettingsSection: View {
             selectedImage = image
             statusText = NSLocalizedString("Image loaded", comment: "")
         } else {
-            isEnabled = false
             statusText = NSLocalizedString("No image selected", comment: "")
         }
     }
@@ -174,7 +166,6 @@ struct FloatImageSettingsSection: View {
             try data.write(to: URL(fileURLWithPath: floatImageFilePath), options: .atomic)
             selectedImage = normalizedImage
             imagePath = floatImageFilePath
-            isEnabled = true
             statusText = NSLocalizedString("Image saved", comment: "")
             saveAndNotify()
         } catch {
@@ -185,13 +176,12 @@ struct FloatImageSettingsSection: View {
     private func saveAndNotify() {
         let defaults = UserDefaults.standard
         defaults.setValue(imagePath, forKey: "floatImagePath", forPath: USER_DEFAULTS_PATH)
-        defaults.setValue(isEnabled, forKey: "floatImageEnabled", forPath: USER_DEFAULTS_PATH)
         defaults.setValue(imageSize, forKey: "floatImageSize", forPath: USER_DEFAULTS_PATH)
         defaults.setValue(offsetX, forKey: "floatImageX", forPath: USER_DEFAULTS_PATH)
         defaults.setValue(offsetY, forKey: "floatImageY", forPath: USER_DEFAULTS_PATH)
         defaults.setValue(opacity, forKey: "floatImageOpacity", forPath: USER_DEFAULTS_PATH)
 
-        if isEnabled && !IsHUDEnabledBridger() {
+        if isWidgetSetEnabled && !IsHUDEnabledBridger() {
             SetHUDEnabledBridger(true)
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 DarwinNotificationCenter.default.post(name: NOTIFY_RELOAD_HUD)
@@ -269,9 +259,11 @@ private struct FloatImagePicker: UIViewControllerRepresentable {
 }
 
 struct FloatImageSettingsView: View {
+    var isWidgetSetEnabled: Bool = true
+
     var body: some View {
         List {
-            FloatImageSettingsSection()
+            FloatImageSettingsSection(isWidgetSetEnabled: isWidgetSetEnabled)
         }
         .navigationTitle(Text(NSLocalizedString("Floating Image", comment: "")))
     }

@@ -374,6 +374,9 @@ void formatParsedInfo(NSDictionary *parsedInfo, NSInteger parsedID, NSMutableAtt
                 widgetString = [WeatherUtils formatTodayResult:today format:widgetString];
             }
             break;
+        case 10:
+            // Floating image is rendered by the HUD image view, not as label text.
+            break;
         default:
             // do not add anything
             break;

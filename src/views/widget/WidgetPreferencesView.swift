@@ -225,6 +225,10 @@ struct WidgetPreferencesView: View {
                         boolSelection = widgetID.config["filled"] as? Bool ?? true
                     }
                 }
+            case .floatImage:
+                NavigationLink(destination: FloatImageSettingsView(isWidgetSetEnabled: widgetSet.isEnabled)) {
+                    Label(NSLocalizedString("Configure Floating Image", comment: ""), systemImage: "photo")
+                }
             case .weather:
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack {
@@ -376,6 +380,8 @@ struct WidgetPreferencesView: View {
         case .chargeSymbol:
             // MARK: Charge Symbol Fill Handling
             widgetStruct.config["filled"] = boolSelection
+        case .floatImage:
+            break
         case .weather:
             // MARK: Weather Handling
             if text == "" {

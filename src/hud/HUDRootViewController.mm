@@ -399,7 +399,21 @@ static void ReloadHUD
 
     NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:USER_DEFAULTS_PATH] ?: @{};
     NSString *imagePath = [settings objectForKey:@"floatImagePath"];
-    BOOL isEnabled = [[settings objectForKey:@"floatImageEnabled"] boolValue];
+    BOOL isEnabled = NO;
+    NSArray *widgetSets = [settings objectForKey:@"widgetProperties"];
+    for (NSDictionary *widgetSet in widgetSets) {
+        if (![[widgetSet objectForKey:@"isEnabled"] boolValue])
+            continue;
+        NSArray *widgetIDs = [widgetSet objectForKey:@"widgetIDs"];
+        for (NSDictionary *widget in widgetIDs) {
+            if ([[widget objectForKey:@"widgetID"] integerValue] == 10) {
+                isEnabled = YES;
+                break;
+            }
+        }
+        if (isEnabled)
+            break;
+    }
     UIImage *image = imagePath.length ? [UIImage imageWithContentsOfFile:imagePath] : nil;
 
     _floatingImageView.image = image;
