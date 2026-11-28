@@ -276,7 +276,9 @@ struct WidgetPreferencesView: View {
                     imageY = widgetID.config["imageY"] as? Double ?? 0
                     imageOpacity = widgetID.config["imageOpacity"] as? Double ?? 0.85
                     imageEnabled = widgetID.config["imageEnabled"] as? Bool ?? true
-                    if let path = widgetID.config["imagePath"] as? String {
+                    if let data = widgetID.config["imageData"] as? Data {
+                        selectedFloatingImage = UIImage(data: data)
+                    } else if let path = widgetID.config["imagePath"] as? String {
                         selectedFloatingImage = UIImage(contentsOfFile: path)
                     }
                 }
@@ -348,28 +350,20 @@ struct WidgetPreferencesView: View {
                     let size = CGSize(width: max(1, image.size.width * factor), height: max(1, image.size.height * factor))
                     let renderer = UIGraphicsImageRenderer(size: size)
                     let normalized = renderer.image { _ in image.draw(in: CGRect(origin: .zero, size: size)) }
-                    let path = "/var/mobile/Library/Preferences/com.leemin.helium.floatimage.\(widgetID.id.uuidString).png"
-                    do {
-                        guard let data = normalized.pngData() else {
-                            imageStatus = NSLocalizedString("Could not encode PNG image", comment: "")
-                            return
-                        }
-                        let directory = URL(fileURLWithPath: path).deletingLastPathComponent()
-                        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-                        try data.write(to: URL(fileURLWithPath: path), options: .atomic)
-                        guard FileManager.default.fileExists(atPath: path),
-                              let savedImage = UIImage(contentsOfFile: path) else {
-                            imageStatus = NSLocalizedString("Image file could not be verified after saving", comment: "")
-                            return
-                        }
-                        selectedFloatingImage = savedImage
-                        widgetID.config["imagePath"] = path
-                        imageStatus = NSLocalizedString("Image saved", comment: "")
-                        modified = true
-                        saveChanges()
-                    } catch {
-                        imageStatus = error.localizedDescription
+                    guard let data = normalized.pngData(),
+                          let savedImage = UIImage(data: data) else {
+                        imageStatus = NSLocalizedString("Could not encode the selected image", comment: "")
+                        return
                     }
+                    // Store image bytes inside this widget's own persisted config.
+                    // This avoids sandbox-inaccessible absolute paths and keeps the image
+                    // available to both the app UI and the injected HUD process.
+                    widgetID.config["imageData"] = data
+                    widgetID.config.removeValue(forKey: "imagePath")
+                    selectedFloatingImage = savedImage
+                    imageStatus = NSLocalizedString("Image saved", comment: "")
+                    modified = true
+                    saveChanges();
                 },
                 onError: { imageStatus = $0 }
             )
