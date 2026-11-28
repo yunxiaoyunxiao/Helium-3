@@ -3,7 +3,7 @@ import PhotosUI
 import SwiftUI
 import UIKit
 
-private let floatImageFilePath = "/var/mobile/Library/Preferences/com.leemin.helium.floatimage.jpg"
+private let floatImageFilePath = "/var/mobile/Library/Preferences/com.leemin.helium.floatimage.png"
 
 struct FloatImageSettingsSection: View {
     @State private var selectedImage: UIImage?
@@ -151,13 +151,14 @@ struct FloatImageSettingsSection: View {
                                 height: max(1, sourceImage.size.height * scale))
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
+        format.opaque = false
         let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
         let normalizedImage = renderer.image { _ in
             sourceImage.draw(in: CGRect(origin: .zero, size: targetSize))
         }
 
-        guard let data = normalizedImage.jpegData(compressionQuality: 0.9) else {
-            statusText = NSLocalizedString("Could not encode image", comment: "")
+        guard let data = normalizedImage.pngData() else {
+            statusText = NSLocalizedString("Could not encode PNG image", comment: "")
             return
         }
 
