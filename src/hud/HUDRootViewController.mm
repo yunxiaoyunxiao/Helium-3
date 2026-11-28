@@ -98,6 +98,10 @@ static void ReloadHUD
 
 #pragma mark - HUDRootViewController
 
+@interface HUDRootViewController ()
+- (void)reloadFloatingImage;
+@end
+
 @implementation HUDRootViewController {
     NSMutableDictionary *_userDefaults;
     NSMutableArray <NSLayoutConstraint *> *_constraints;
