@@ -267,3 +267,12 @@ private struct FloatImagePicker: UIViewControllerRepresentable {
         }
     }
 }
+
+struct FloatImageSettingsView: View {
+    var body: some View {
+        List {
+            FloatImageSettingsSection()
+        }
+        .navigationTitle(Text(NSLocalizedString("Floating Image", comment: "")))
+    }
+}
