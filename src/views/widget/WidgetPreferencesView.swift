@@ -241,7 +241,7 @@ struct WidgetPreferencesView: View {
                     Button(action: { showingImagePicker = true }) {
                         Label(NSLocalizedString("Choose Image", comment: ""), systemImage: "photo")
                     }
-                    if let image = selectedFloatingImage ?? ((widgetID.config["imagePath"] as? String).flatMap { UIImage(contentsOfFile: $0) }) {
+                    if let image = floatingImageForDisplay {
                         Image(uiImage: image)
                             .resizable()
                             .scaledToFit()
@@ -276,10 +276,19 @@ struct WidgetPreferencesView: View {
                     imageY = widgetID.config["imageY"] as? Double ?? 0
                     imageOpacity = widgetID.config["imageOpacity"] as? Double ?? 0.85
                     imageEnabled = widgetID.config["imageEnabled"] as? Bool ?? true
+                    selectedFloatingImage = nil
                     if let data = widgetID.config["imageData"] as? Data {
                         selectedFloatingImage = UIImage(data: data)
+                        imageStatus = selectedFloatingImage == nil
+                            ? NSLocalizedString("Saved image data could not be decoded", comment: "")
+                            : NSLocalizedString("Image saved", comment: "")
                     } else if let path = widgetID.config["imagePath"] as? String {
                         selectedFloatingImage = UIImage(contentsOfFile: path)
+                        imageStatus = selectedFloatingImage == nil
+                            ? NSLocalizedString("Saved image could not be loaded", comment: "")
+                            : NSLocalizedString("Image saved", comment: "")
+                    } else {
+                        imageStatus = NSLocalizedString("No image selected", comment: "")
                     }
                 }
             case .weather:
@@ -414,6 +423,21 @@ struct WidgetPreferencesView: View {
         }
     }
     
+    // Always resolve the preview from the live widget binding first.
+    // SwiftUI may recreate this navigation destination and reset @State,
+    // while the persisted image bytes remain in the widget's config.
+    private var floatingImageForDisplay: UIImage? {
+        if let image = selectedFloatingImage { return image }
+        if let data = widgetID.config["imageData"] as? Data,
+           let image = UIImage(data: data) {
+            return image
+        }
+        if let path = widgetID.config["imagePath"] as? String {
+            return UIImage(contentsOfFile: path)
+        }
+        return nil
+    }
+
     private func persistFloatingImageSettings() {
         guard widgetID.module == .floatingImage else { return }
         widgetID.config["imageSize"] = imageSize
